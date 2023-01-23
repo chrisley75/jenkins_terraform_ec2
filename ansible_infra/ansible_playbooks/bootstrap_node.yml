@@ -1,0 +1,32 @@
+---
+
+- hosts: localhost
+  gather_facts: no
+  become: true
+  connection: local
+  tasks:
+    - name: download token command file
+      aws_s3:
+        aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+        aws_security_token: "{{ lookup('env', 'AWS_SESSION_TOKEN') }}"
+        ec2_region: "eu-west-3"
+        bucket: "{{ lookup('env', 'ANSIBLE_BUCKET_NAME') }}"
+        mode: get
+        object: /token_cmd.sh
+        dest: ./token_cmd.sh
+
+- hosts: kubenodes
+  gather_facts: no
+  become: true
+  tasks:
+    - name: copy command token file
+      copy: 
+        src: ./token_cmd.sh
+        dest: /tmp/token_cmd.sh
+        mode: u+x
+    - name: execute join command
+      shell: ./token_cmd.sh >> tokenout.txt
+      args:
+        chdir: /tmp/
+        
